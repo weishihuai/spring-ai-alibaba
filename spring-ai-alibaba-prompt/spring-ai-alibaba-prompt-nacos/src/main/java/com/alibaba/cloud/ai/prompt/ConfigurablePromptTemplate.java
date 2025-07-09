@@ -27,6 +27,9 @@ import org.springframework.core.io.Resource;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 可配置的提示模板类，用于封装 PromptTemplate 并提供多种方式创建提示（Prompt）、消息（Message）和渲染模板（render）
+ */
 public class ConfigurablePromptTemplate implements PromptTemplateActions, PromptTemplateMessageActions {
 
 	private final PromptTemplate promptTemplate;
@@ -94,6 +97,9 @@ public class ConfigurablePromptTemplate implements PromptTemplateActions, Prompt
 		return promptTemplate.render();
 	}
 
+	/**
+	 * 将模板中的变量进行替换并返回渲染后的字符串结果。
+	 */
 	@Override
 	public String render(Map<String, Object> model) {
 		return promptTemplate.render(model);

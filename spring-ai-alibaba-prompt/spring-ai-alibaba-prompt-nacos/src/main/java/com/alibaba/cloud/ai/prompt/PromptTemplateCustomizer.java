@@ -18,7 +18,7 @@ package com.alibaba.cloud.ai.prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
- * Callback interface that can be used to customize a {@link PromptTemplate.Builder}
+ * 允许通过回调方式对 PromptTemplate.Builder 实例进行定制化配置。
  *
  * @since 1.0.0.3
  * @author yuhuangbin

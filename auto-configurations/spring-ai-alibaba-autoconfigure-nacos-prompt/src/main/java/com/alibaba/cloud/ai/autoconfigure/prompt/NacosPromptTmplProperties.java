@@ -28,7 +28,7 @@ public class NacosPromptTmplProperties {
 	public final static String TEMPLATE_PREFIX = "spring.ai.nacos.prompt.template";
 
 	/**
-	 * Default not enabled.
+	 * 默认未启用。需要在配置文件中开启
 	 */
 	private boolean enabled = false;
 

@@ -30,66 +30,102 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+/**
+ * 配置模板工厂
+ */
 public class ConfigurablePromptTemplateFactory {
 
 	private static final Logger logger = LoggerFactory.getLogger(ConfigurablePromptTemplateFactory.class);
 
-	private final Map<String, ConfigurablePromptTemplate> templates = new ConcurrentHashMap<>();
+    /**
+     * 使用ConcurrentHashMap保证多线程访问时的线程安全
+     */
+    private final Map<String, ConfigurablePromptTemplate> templates = new ConcurrentHashMap<>();
 
-	private final PromptTemplateBuilderConfigure promptTemplateBuilderConfigure;
+    /**
+     * 可自定义配置PromptTemplate构建器的配置类
+     */
+    private final PromptTemplateBuilderConfigure promptTemplateBuilderConfigure;
 
-	public ConfigurablePromptTemplateFactory(PromptTemplateBuilderConfigure promptTemplateBuilderConfigure) {
-		this.promptTemplateBuilderConfigure = promptTemplateBuilderConfigure;
-	}
+    public ConfigurablePromptTemplateFactory(PromptTemplateBuilderConfigure promptTemplateBuilderConfigure) {
+        this.promptTemplateBuilderConfigure = promptTemplateBuilderConfigure;
+    }
 
-	public ConfigurablePromptTemplate create(String name, Resource resource) {
-		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource));
-	}
+    /**
+     * 以下create方法提供多种方式创建ConfigurablePromptTemplate实例
+     * 如果缓存中不存在，则根据name和Resource创建新的模板
+     */
+    public ConfigurablePromptTemplate create(String name, Resource resource) {
+        return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource));
+    }
 
-	public ConfigurablePromptTemplate create(String name, String template) {
-		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, template));
-	}
+    /**
+     * 如果缓存中不存在，则根据name和字符串模板创建新的模板
+     */
+    public ConfigurablePromptTemplate create(String name, String template) {
+        return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, template));
+    }
 
-	public ConfigurablePromptTemplate create(String name, String template, Map<String, Object> model) {
-		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, template, model));
-	}
+    /**
+     * 如果缓存中不存在，则根据name、字符串模板和变量模型创建新的模板
+     */
+    public ConfigurablePromptTemplate create(String name, String template, Map<String, Object> model) {
+        return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, template, model));
+    }
 
-	public ConfigurablePromptTemplate create(String name, Resource resource, Map<String, Object> model) {
-		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource, model));
-	}
+    /**
+     * 如果缓存中不存在，则根据name、Resource和变量模型创建新的模板
+     */
+    public ConfigurablePromptTemplate create(String name, Resource resource, Map<String, Object> model) {
+        return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, resource, model));
+    }
 
-	public ConfigurablePromptTemplate create(String name, PromptTemplate promptTemplate) {
-		return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, promptTemplate));
-	}
+    /**
+     * 如果缓存中不存在，则根据name和已有的PromptTemplate创建新的模板
+     */
+    public ConfigurablePromptTemplate create(String name, PromptTemplate promptTemplate) {
+        return templates.computeIfAbsent(name, k -> new ConfigurablePromptTemplate(name, promptTemplate));
+    }
 
-	@NacosConfigListener(dataId = "spring.ai.alibaba.configurable.prompt", group = "DEFAULT_GROUP", initNotify = true)
-	protected void onConfigChange(List<ConfigurablePromptTemplateModel> configList) {
-		if (CollectionUtils.isEmpty(configList)) {
-			return;
-		}
-		for (ConfigurablePromptTemplateModel configuration : configList) {
-			if (!StringUtils.hasText(configuration.name()) || !StringUtils.hasText(configuration.template())) {
-				continue;
-			}
-			PromptTemplate.Builder promptTemplateBuilder = promptTemplateBuilderConfigure
-				.configure(PromptTemplate.builder()
-					.template(configuration.template())
-					.variables(configuration.model() == null ? new HashMap<>() : configuration.model()));
+    /**
+     * Nacos配置监听器，当远程配置发生变化时触发
+     */
+    @NacosConfigListener(dataId = "spring.ai.alibaba.configurable.prompt", group = "DEFAULT_GROUP", initNotify = true)
+    protected void onConfigChange(List<ConfigurablePromptTemplateModel> configList) {
+        if (CollectionUtils.isEmpty(configList)) {
+            return;
+        }
+        for (ConfigurablePromptTemplateModel configuration : configList) {
+            if (!StringUtils.hasText(configuration.name()) || !StringUtils.hasText(configuration.template())) {
+                continue;
+            }
+            // 构建PromptTemplate对象
+            PromptTemplate.Builder promptTemplateBuilder = promptTemplateBuilderConfigure
+                .configure(PromptTemplate.builder()
+                    .template(configuration.template())
+                    .variables(configuration.model() == null ? new HashMap<>() : configuration.model()));
 
-			templates.put(configuration.name(),
-					new ConfigurablePromptTemplate(configuration.name(), promptTemplateBuilder.build()));
+            // 存入缓存
+            templates.put(configuration.name(),
+                    new ConfigurablePromptTemplate(configuration.name(), promptTemplateBuilder.build()));
 
-			logger.info("OnPromptTemplateConfigChange,templateName:{},template:{},model:{}", configuration.name(),
-					configuration.template(), configuration.model());
-		}
-	}
+            logger.info("OnPromptTemplateConfigChange,templateName:{},template:{},model:{}", configuration.name(),
+                    configuration.template(), configuration.model());
+        }
+    }
 
-	public ConfigurablePromptTemplate getTemplate(String name) {
-		return templates.get(name);
-	}
+    /**
+     * 根据名称获取模板
+     */
+    public ConfigurablePromptTemplate getTemplate(String name) {
+        return templates.get(name);
+    }
 
-	public record ConfigurablePromptTemplateModel(String name, String template, Map<String, Object> model) {
+    /**
+     * 配置模型类，用于从Nacos接收配置信息
+     */
+    public record ConfigurablePromptTemplateModel(String name, String template, Map<String, Object> model) {
 
-	}
+    }
 
 }
